@@ -1,4 +1,4 @@
-```javascript
+
 import { supabase, isSupabaseConfigured } from '../config/supabase.js';
 import { mockData } from '../utils/mockStore.js';
 
@@ -1174,4 +1174,4 @@ export function stopAutomatedReminderScheduler() {
     '[NotificationService] Reminder scheduler stopped.'
   );
 }
-```
+
