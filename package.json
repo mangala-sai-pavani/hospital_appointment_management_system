@@ -7,7 +7,7 @@
   "dev": "vite",
   "dev:backend": "tsx backend/src/server.js",
   "build": "vite build && esbuild backend/src/server.js --bundle --platform=node --format=cjs --packages=external --outfile=dist/server.cjs",
-  "start": "node dist/server.cjs",
+"start": "node dist/server.cjs",
   "clean": "rm -rf dist",
   "lint": "tsc --noEmit"
 },
