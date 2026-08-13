@@ -1,0 +1,56 @@
+/* Tables Styling */
+.table-container {
+  width: 100%;
+  overflow-x: auto;
+  border-radius: var(--radius-card);
+  background-color: var(--color-card-bg);
+  border: 1px solid var(--color-border);
+}
+
+.custom-table {
+  width: 100%;
+  border-collapse: collapse;
+  text-align: left;
+  font-size: 0.9rem;
+}
+
+.custom-table th {
+  padding: 1rem 1.25rem;
+  font-size: 0.75rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--color-text-muted);
+  border-bottom: 1px solid var(--color-subtle-bg);
+  background-color: #fafcfb;
+}
+
+.custom-table td {
+  padding: 1rem 1.25rem;
+  border-bottom: 1px solid var(--color-subtle-bg);
+  color: var(--color-text-main);
+  vertical-align: middle;
+}
+
+.custom-table tbody tr:last-child td {
+  border-bottom: none;
+}
+
+.custom-table tbody tr:hover {
+  background-color: var(--color-subtle-bg);
+}
+
+.table-patient-info {
+  display: flex;
+  flex-direction: column;
+}
+
+.patient-name {
+  font-weight: 700;
+  color: var(--color-primary-dark);
+}
+
+.patient-sub {
+  font-size: 0.75rem;
+  color: var(--color-text-muted);
+}

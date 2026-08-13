@@ -1,0 +1,6 @@
+{
+  "name": "Hospital Appointment Management System",
+  "description": "A comprehensive hospital appointment, queue, patient, doctor, and analytics management system.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}

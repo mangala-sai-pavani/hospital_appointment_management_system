@@ -1,0 +1,60 @@
+/* Queue System Styling */
+.queue-container {
+  background-color: var(--color-subtle-bg);
+  border-radius: var(--radius-card);
+  padding: 1.5rem;
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.queue-card {
+  background-color: var(--color-card-bg);
+  border-radius: 16px;
+  padding: 1rem 1.25rem;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  border-left: 5px solid var(--color-border);
+  box-shadow: var(--shadow-sm);
+  transition: all 0.2s ease;
+}
+
+.queue-card.status-IN_PROGRESS, .queue-card.status-CALLED {
+  border-left-color: var(--color-primary);
+  background-color: #f7faf8;
+}
+
+.queue-card.status-WAITING {
+  border-left-color: #3b82f6;
+}
+
+.queue-number-badge {
+  width: 2.5rem;
+  height: 2.5rem;
+  border-radius: 50%;
+  background-color: var(--color-subtle-bg);
+  color: var(--color-primary-dark);
+  font-weight: 800;
+  font-size: 0.95rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.queue-patient-name {
+  font-weight: 700;
+  font-size: 0.95rem;
+  color: var(--color-primary-dark);
+}
+
+.queue-dept {
+  font-size: 0.75rem;
+  color: var(--color-text-muted);
+}
+
+.queue-action-btns {
+  display: flex;
+  gap: 0.5rem;
+}

@@ -1,0 +1,100 @@
+/* Authentication Page Styling */
+.auth-wrapper {
+  min-height: 100vh;
+  width: 100vw;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background-color: var(--color-bg-main);
+  padding: 1.5rem;
+}
+
+.auth-card {
+  width: 100%;
+  max-width: 480px;
+  background-color: var(--color-card-bg);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-card);
+  padding: 2.5rem;
+  box-shadow: var(--shadow-md);
+}
+
+.auth-header {
+  text-align: center;
+  margin-bottom: 2rem;
+}
+
+.auth-logo-badge {
+  width: 3.25rem;
+  height: 3.25rem;
+  background-color: var(--color-sidebar);
+  color: var(--color-primary);
+  border-radius: 16px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.5rem;
+  font-weight: 800;
+  margin: 0 auto 1rem auto;
+}
+
+.auth-title {
+  font-size: 1.65rem;
+  font-weight: 800;
+  color: var(--color-primary-dark);
+}
+
+.auth-subtitle {
+  color: var(--color-text-muted);
+  font-size: 0.9rem;
+  margin-top: 0.25rem;
+}
+
+.auth-footer {
+  text-align: center;
+  margin-top: 1.5rem;
+  font-size: 0.9rem;
+  color: var(--color-text-muted);
+}
+
+.auth-link {
+  color: var(--color-primary-dark);
+  font-weight: 700;
+  text-decoration: underline;
+}
+
+.demo-account-pills {
+  margin-top: 1.5rem;
+  padding-top: 1.5rem;
+  border-top: 1px solid var(--color-subtle-bg);
+}
+
+.demo-accounts-title {
+  font-size: 0.75rem;
+  font-weight: 700;
+  color: var(--color-text-muted);
+  text-transform: uppercase;
+  margin-bottom: 0.75rem;
+}
+
+.demo-btn-group {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+.demo-chip {
+  padding: 0.35rem 0.75rem;
+  background-color: var(--color-subtle-bg);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-pill);
+  font-size: 0.75rem;
+  font-weight: 600;
+  cursor: pointer;
+  color: var(--color-primary-dark);
+  transition: all 0.2s ease;
+}
+
+.demo-chip:hover {
+  background-color: var(--color-primary);
+}
