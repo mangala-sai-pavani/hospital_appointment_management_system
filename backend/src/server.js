@@ -7,140 +7,102 @@ import dotenv from 'dotenv';
 
 dotenv.config();
 
-const PORT = Number(process.env.PORT) || 5000;
+const PORT = process.env.PORT || 5000;
 const isProd = process.env.NODE_ENV === 'production';
 
 async function startServer() {
-let vite = null;
+  let vite = null;
 
-// Vite is only used during local development
-if (!isProd) {
-const { createServer: createViteServer } = await import('vite');
+  // Vite only runs locally during development
+  if (!isProd) {
+    const { createServer: createViteServer } = await import('vite');
 
-```
-vite = await createViteServer({
-  server: {
-    middlewareMode: true
-  },
-  appType: 'spa'
-});
-```
-
-}
-
-const server = http.createServer((req, res) => {
-// --------------------------------------------------------
-// API ROUTES
-// --------------------------------------------------------
-
-```
-if (req.url?.startsWith('/api')) {
-  return router(req, res);
-}
-
-// --------------------------------------------------------
-// DEVELOPMENT - VITE
-// --------------------------------------------------------
-
-if (vite) {
-  return vite.middlewares(req, res);
-}
-
-// --------------------------------------------------------
-// PRODUCTION - SERVE FRONTEND
-// --------------------------------------------------------
-
-const distPath = path.join(process.cwd(), 'dist');
-
-let requestedPath = req.url || '/';
-
-// Remove query parameters
-requestedPath = requestedPath.split('?')[0];
-
-let filePath = path.join(
-  distPath,
-  requestedPath === '/' ? 'index.html' : requestedPath
-);
-
-// Prevent invalid file paths
-if (
-  !fs.existsSync(filePath) ||
-  fs.statSync(filePath).isDirectory()
-) {
-  filePath = path.join(distPath, 'index.html');
-}
-
-fs.readFile(filePath, (err, data) => {
-  if (err) {
-    console.error('Static file error:', err);
-
-    res.writeHead(500, {
-      'Content-Type': 'text/plain'
+    vite = await createViteServer({
+      server: {
+        middlewareMode: true
+      },
+      appType: 'spa'
     });
-
-    return res.end('Error loading application');
   }
 
-  const ext = path.extname(filePath).toLowerCase();
+  const server = http.createServer((req, res) => {
 
-  const contentTypes = {
-    '.html': 'text/html',
-    '.js': 'application/javascript',
-    '.css': 'text/css',
-    '.json': 'application/json',
-    '.png': 'image/png',
-    '.jpg': 'image/jpeg',
-    '.jpeg': 'image/jpeg',
-    '.svg': 'image/svg+xml',
-    '.ico': 'image/x-icon',
-    '.webp': 'image/webp'
-  };
+    // API routes
+    if (req.url.startsWith('/api')) {
+      return router(req, res);
+    }
 
-  const contentType =
-    contentTypes[ext] || 'application/octet-stream';
+    // Development: Vite middleware
+    if (vite) {
+      return vite.middlewares(req, res);
+    }
 
-  res.writeHead(200, {
-    'Content-Type': contentType
+    // Production: serve React build
+    const distPath = path.join(process.cwd(), 'dist');
+
+    let filePath = path.join(
+      distPath,
+      req.url === '/' ? 'index.html' : req.url
+    );
+
+    // React SPA fallback
+    if (
+      !fs.existsSync(filePath) ||
+      fs.statSync(filePath).isDirectory()
+    ) {
+      filePath = path.join(distPath, 'index.html');
+    }
+
+    fs.readFile(filePath, (err, data) => {
+      if (err) {
+        console.error('Error loading file:', err);
+
+        res.writeHead(500, {
+          'Content-Type': 'text/plain'
+        });
+
+        res.end('Error loading application');
+        return;
+      }
+
+      const ext = path.extname(filePath);
+
+      const contentTypes = {
+        '.html': 'text/html',
+        '.js': 'application/javascript',
+        '.css': 'text/css',
+        '.json': 'application/json',
+        '.png': 'image/png',
+        '.jpg': 'image/jpeg',
+        '.jpeg': 'image/jpeg',
+        '.svg': 'image/svg+xml',
+        '.ico': 'image/x-icon',
+        '.woff': 'font/woff',
+        '.woff2': 'font/woff2'
+      };
+
+      const contentType =
+        contentTypes[ext] || 'application/octet-stream';
+
+      res.writeHead(200, {
+        'Content-Type': contentType
+      });
+
+      res.end(data);
+    });
   });
 
-  res.end(data);
-});
-```
+  server.listen(PORT, '0.0.0.0', () => {
+    console.log(
+      `[Hospital System Server] Running on port ${PORT}`
+    );
 
-});
-
-// --------------------------------------------------------
-// START SERVER
-// --------------------------------------------------------
-
-server.listen(PORT, '0.0.0.0', () => {
-console.log(
-`[Hospital System Server] Running on port ${PORT}`
-);
-
-```
-console.log(
-  `[Hospital System Server] Environment: ${
-    isProd ? 'production' : 'development'
-  }`
-);
-
-// Start automated 24-hour appointment reminder scheduler
-startAutomatedReminderScheduler();
-```
-
-});
+    // Start reminder scheduler
+    startAutomatedReminderScheduler();
+  });
 }
 
-// ------------------------------------------------------------
-// START APPLICATION
-// ------------------------------------------------------------
-
-startServer().catch(error => {
-console.error(
-'[Hospital System Server] Failed to start:',
-error
-);
-
-process.exit(1);
+startServer().catch((err) => {
+  console.error('Failed to start server:', err);
+  process.exit(1);
 });
