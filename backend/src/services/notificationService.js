@@ -3,7 +3,7 @@ import { supabase, isSupabaseConfigured } from '../config/supabase.js';
 import { mockData } from '../utils/mockStore.js';
 
 // ============================================================
-// NOTIFICATION SETTINGS
+// REMINDER SETTINGS
 // ============================================================
 
 let reminderSettings = {
@@ -21,7 +21,7 @@ let reminderSettings = {
 };
 
 // ============================================================
-// IN-MEMORY LOGS
+// LOGS
 // ============================================================
 
 const notificationLogs = [];
@@ -44,13 +44,11 @@ function generateId(prefix = 'notif') {
     .substring(2, 8)}`;
 }
 
-// -------------------- PATIENT --------------------
-
 function getPatientName(apt) {
   return (
     apt?.patients?.profiles?.name ||
     apt?.patients?.name ||
-    null
+    'Valued Patient'
   );
 }
 
@@ -78,13 +76,11 @@ function getPatientProfileId(apt) {
   );
 }
 
-// -------------------- DOCTOR --------------------
-
 function getDoctorName(apt) {
   return (
     apt?.doctors?.profiles?.name ||
     apt?.doctors?.name ||
-    null
+    'Medical Specialist'
   );
 }
 
@@ -205,10 +201,6 @@ export async function addNotification({
   message,
   type = 'INFO'
 }) {
-  if (!user_id) {
-    return null;
-  }
-
   const notification = {
     id: generateId(),
     user_id,
@@ -219,7 +211,7 @@ export async function addNotification({
     created_at: new Date().toISOString()
   };
 
-  if (isSupabaseConfigured) {
+  if (isSupabaseConfigured && user_id) {
     try {
       const { data, error } = await supabase
         .from('notifications')
@@ -251,7 +243,7 @@ export async function addNotification({
 }
 
 // ============================================================
-// MARK NOTIFICATION AS READ
+// MARK AS READ
 // ============================================================
 
 export async function markNotificationAsRead(
@@ -302,11 +294,11 @@ export async function markNotificationAsRead(
 }
 
 // ============================================================
-// MARK ALL NOTIFICATIONS AS READ
+// MARK ALL AS READ
 // ============================================================
 
 export async function markAllNotificationsAsRead(userId) {
-  if (isSupabaseConfigured) {
+  if (isSupabaseConfigured && userId) {
     try {
       const { error } = await supabase
         .from('notifications')
@@ -392,9 +384,9 @@ export async function deleteNotification(
 // EMAIL TEMPLATE - PATIENT
 // ============================================================
 
-export function generatePatientEmailTemplate(apt) {
-  const patientName = getPatientName(apt) || 'Patient';
-  const doctorName = getDoctorName(apt) || 'Your Doctor';
+export function generateEmailTemplate(apt) {
+  const patientName = getPatientName(apt);
+  const doctorName = getDoctorName(apt);
   const department = getDepartment(apt);
 
   const date = apt?.appointment_date || 'Tomorrow';
@@ -446,8 +438,8 @@ export function generatePatientEmailTemplate(apt) {
     <h2>Hello ${patientName},</h2>
 
     <p>
-      This is a reminder that you have an appointment
-      scheduled within the next 24 hours.
+      This is a reminder that your appointment is scheduled
+      within the next 24 hours.
     </p>
 
     <div style="
@@ -472,7 +464,7 @@ export function generatePatientEmailTemplate(apt) {
     </p>
 
     <p>
-      For rescheduling or cancellation, contact:
+      For assistance, contact:
       ${reminderSettings.hospitalPhone}
     </p>
 
@@ -505,15 +497,15 @@ export function generatePatientEmailTemplate(apt) {
 // ============================================================
 
 export function generateDoctorEmailTemplate(apt) {
-  const doctorName = getDoctorName(apt) || 'Doctor';
-  const patientName = getPatientName(apt) || 'Patient';
+  const doctorName = getDoctorName(apt);
+  const patientName = getPatientName(apt);
   const department = getDepartment(apt);
 
   const date = apt?.appointment_date || 'Tomorrow';
   const time = apt?.appointment_time || 'Scheduled Time';
 
   const subject =
-    `24-Hour Appointment Reminder: ${patientName}`;
+    `Appointment Reminder: ${patientName} - ${date} ${time}`;
 
   const html = `
 <!DOCTYPE html>
@@ -550,16 +542,15 @@ export function generateDoctorEmailTemplate(apt) {
       ${reminderSettings.hospitalName}
     </h1>
 
-    <p>Doctor Appointment Reminder</p>
+    <p>24-Hour Appointment Reminder</p>
   </div>
 
   <div style="padding:30px 24px;">
 
-    <h2>Hello ${doctorName},</h2>
+    <h2>Hello Dr. ${doctorName},</h2>
 
     <p>
-      This is a reminder that you have an appointment
-      scheduled within the next 24 hours.
+      This is a reminder about your upcoming patient appointment.
     </p>
 
     <div style="
@@ -610,21 +601,20 @@ export function generateDoctorEmailTemplate(apt) {
 // SMS TEMPLATE - PATIENT
 // ============================================================
 
-export function generatePatientSmsTemplate(apt) {
-  const patientName = getPatientName(apt) || 'Patient';
-  const doctorName = getDoctorName(apt) || 'your doctor';
+export function generateSmsTemplate(apt) {
+  const patientName = getPatientName(apt);
+  const doctorName = getDoctorName(apt);
 
-  const date = apt?.appointment_date || 'tomorrow';
-  const time = apt?.appointment_time || 'your scheduled time';
+  const date = apt?.appointment_date || 'Tomorrow';
+  const time = apt?.appointment_time || 'Scheduled Time';
 
-  return {
-    body:
-      `[${reminderSettings.hospitalName}] ` +
-      `Hi ${patientName}, your appointment with ${doctorName} ` +
-      `is scheduled for ${date} at ${time}. ` +
-      `Please arrive 15 minutes early. ` +
-      `Call ${reminderSettings.hospitalPhone} for assistance.`
-  };
+  const body =
+    `[${reminderSettings.hospitalName}] ` +
+    `Hi ${patientName}, your appointment with ${doctorName} ` +
+    `is scheduled for ${date} at ${time}. ` +
+    `For assistance call ${reminderSettings.hospitalPhone}.`;
+
+  return { body };
 }
 
 // ============================================================
@@ -632,50 +622,46 @@ export function generatePatientSmsTemplate(apt) {
 // ============================================================
 
 export function generateDoctorSmsTemplate(apt) {
-  const doctorName = getDoctorName(apt) || 'Doctor';
-  const patientName = getPatientName(apt) || 'Patient';
+  const doctorName = getDoctorName(apt);
+  const patientName = getPatientName(apt);
 
-  const date = apt?.appointment_date || 'tomorrow';
-  const time = apt?.appointment_time || 'your scheduled time';
+  const date = apt?.appointment_date || 'Tomorrow';
+  const time = apt?.appointment_time || 'Scheduled Time';
 
-  return {
-    body:
-      `[${reminderSettings.hospitalName}] ` +
-      `Dr. ${doctorName}, reminder: patient ${patientName} ` +
-      `has an appointment with you on ${date} at ${time}.`
-  };
+  const body =
+    `[${reminderSettings.hospitalName}] ` +
+    `Dr. ${doctorName}, reminder: patient ${patientName} ` +
+    `has an appointment scheduled for ${date} at ${time}.`;
+
+  return { body };
 }
 
 // ============================================================
-// CREATE NOTIFICATION LOG
+// CREATE DELIVERY LOG
 // ============================================================
 
-function createNotificationLog({
+function createLog({
   apt,
   recipientType,
-  recipientName,
-  recipientEmail,
-  recipientPhone,
   channel,
+  recipient,
   subject,
   messageBody,
   isAutomated
 }) {
-  const log = {
+  return {
     id: generateId('log'),
     appointment_id: apt.id,
 
     recipient_type: recipientType,
-
-    recipient_name: recipientName,
-    recipient_email: recipientEmail,
-    recipient_phone: recipientPhone,
 
     patient_name: getPatientName(apt),
     patient_email: getPatientEmail(apt),
     patient_phone: getPatientPhone(apt),
 
     doctor_name: getDoctorName(apt),
+    doctor_email: getDoctorEmail(apt),
+    doctor_phone: getDoctorPhone(apt),
 
     department: getDepartment(apt),
 
@@ -683,99 +669,20 @@ function createNotificationLog({
     appointment_time: apt.appointment_time,
 
     channel,
-    status: 'DELIVERED',
+    recipient,
 
+    status: 'DELIVERED',
     subject,
     message_body,
 
     sent_at: new Date().toISOString(),
-
     is_automated: isAutomated
   };
-
-  notificationLogs.push(log);
-
-  return log;
-}
-
-// ============================================================
-// SEND EMAIL/SMS TO ONE RECIPIENT
-// ============================================================
-
-async function sendToRecipient({
-  apt,
-  recipientType,
-  name,
-  email,
-  phone,
-  emailContent,
-  smsContent,
-  channel,
-  isAutomated
-}) {
-  const sentLogs = [];
-
-  // ---------------- EMAIL ----------------
-
-  if (channel === 'EMAIL' || channel === 'BOTH') {
-    if (email) {
-      const emailLog = createNotificationLog({
-        apt,
-        recipientType,
-        recipientName: name,
-        recipientEmail: email,
-        recipientPhone: phone,
-        channel: 'EMAIL',
-        subject: emailContent.subject,
-        messageBody: emailContent.html,
-        isAutomated
-      });
-
-      sentLogs.push(emailLog);
-
-      console.log(
-        `[NotificationService] EMAIL reminder prepared for ${recipientType}: ${email}`
-      );
-    } else {
-      console.warn(
-        `[NotificationService] No email found for ${recipientType}.`
-      );
-    }
-  }
-
-  // ---------------- SMS ----------------
-
-  if (channel === 'SMS' || channel === 'BOTH') {
-    if (phone) {
-      const smsLog = createNotificationLog({
-        apt,
-        recipientType,
-        recipientName: name,
-        recipientEmail: email,
-        recipientPhone: phone,
-        channel: 'SMS',
-        subject: 'Appointment Reminder',
-        messageBody: smsContent.body,
-        isAutomated
-      });
-
-      sentLogs.push(smsLog);
-
-      console.log(
-        `[NotificationService] SMS reminder prepared for ${recipientType}: ${phone}`
-      );
-    } else {
-      console.warn(
-        `[NotificationService] No phone number found for ${recipientType}.`
-      );
-    }
-  }
-
-  return sentLogs;
 }
 
 // ============================================================
 // SEND APPOINTMENT REMINDER
+// PATIENT + DOCTOR
 // ============================================================
 
 export async function sendAppointmentReminder(
@@ -784,70 +691,135 @@ export async function sendAppointmentReminder(
   isAutomated = false
 ) {
   if (!apt?.id) {
-    throw new Error('Invalid appointment');
+    throw new Error('Appointment ID is required');
   }
 
   const channel =
     targetChannel || reminderSettings.channels;
 
-  const patientName = getPatientName(apt);
+  const sentLogs = [];
+
   const patientEmail = getPatientEmail(apt);
   const patientPhone = getPatientPhone(apt);
 
-  const doctorName = getDoctorName(apt);
   const doctorEmail = getDoctorEmail(apt);
   const doctorPhone = getDoctorPhone(apt);
 
-  // ---------------- TEMPLATES ----------------
+  // ----------------------------------------------------------
+  // PATIENT EMAIL
+  // ----------------------------------------------------------
 
-  const patientEmailContent =
-    generatePatientEmailTemplate(apt);
+  if (
+    (channel === 'EMAIL' || channel === 'BOTH') &&
+    patientEmail
+  ) {
+    const content = generateEmailTemplate(apt);
 
-  const doctorEmailContent =
-    generateDoctorEmailTemplate(apt);
+    const log = createLog({
+      apt,
+      recipientType: 'PATIENT',
+      channel: 'EMAIL',
+      recipient: patientEmail,
+      subject: content.subject,
+      messageBody: content.html,
+      isAutomated
+    });
 
-  const patientSmsContent =
-    generatePatientSmsTemplate(apt);
+    notificationLogs.push(log);
+    sentLogs.push(log);
 
-  const doctorSmsContent =
-    generateDoctorSmsTemplate(apt);
+    console.log(
+      `[NotificationService] Patient EMAIL reminder prepared for ${patientEmail}`
+    );
+  }
 
-  // ---------------- PATIENT ----------------
+  // ----------------------------------------------------------
+  // PATIENT SMS
+  // ----------------------------------------------------------
 
-  const patientLogs = await sendToRecipient({
-    apt,
-    recipientType: 'PATIENT',
-    name: patientName,
-    email: patientEmail,
-    phone: patientPhone,
-    emailContent: patientEmailContent,
-    smsContent: patientSmsContent,
-    channel,
-    isAutomated
-  });
+  if (
+    (channel === 'SMS' || channel === 'BOTH') &&
+    patientPhone
+  ) {
+    const content = generateSmsTemplate(apt);
 
-  // ---------------- DOCTOR ----------------
+    const log = createLog({
+      apt,
+      recipientType: 'PATIENT',
+      channel: 'SMS',
+      recipient: patientPhone,
+      subject: '24-Hour Appointment Reminder',
+      messageBody: content.body,
+      isAutomated
+    });
 
-  const doctorLogs = await sendToRecipient({
-    apt,
-    recipientType: 'DOCTOR',
-    name: doctorName,
-    email: doctorEmail,
-    phone: doctorPhone,
-    emailContent: doctorEmailContent,
-    smsContent: doctorSmsContent,
-    channel,
-    isAutomated
-  });
+    notificationLogs.push(log);
+    sentLogs.push(log);
 
-  const sentLogs = [
-    ...patientLogs,
-    ...doctorLogs
-  ];
+    console.log(
+      `[NotificationService] Patient SMS reminder prepared for ${patientPhone}`
+    );
+  }
 
-  // ==========================================================
+  // ----------------------------------------------------------
+  // DOCTOR EMAIL
+  // ----------------------------------------------------------
+
+  if (
+    (channel === 'EMAIL' || channel === 'BOTH') &&
+    doctorEmail
+  ) {
+    const content = generateDoctorEmailTemplate(apt);
+
+    const log = createLog({
+      apt,
+      recipientType: 'DOCTOR',
+      channel: 'EMAIL',
+      recipient: doctorEmail,
+      subject: content.subject,
+      messageBody: content.html,
+      isAutomated
+    });
+
+    notificationLogs.push(log);
+    sentLogs.push(log);
+
+    console.log(
+      `[NotificationService] Doctor EMAIL reminder prepared for ${doctorEmail}`
+    );
+  }
+
+  // ----------------------------------------------------------
+  // DOCTOR SMS
+  // ----------------------------------------------------------
+
+  if (
+    (channel === 'SMS' || channel === 'BOTH') &&
+    doctorPhone
+  ) {
+    const content = generateDoctorSmsTemplate(apt);
+
+    const log = createLog({
+      apt,
+      recipientType: 'DOCTOR',
+      channel: 'SMS',
+      recipient: doctorPhone,
+      subject: '24-Hour Appointment Reminder',
+      messageBody: content.body,
+      isAutomated
+    });
+
+    notificationLogs.push(log);
+    sentLogs.push(log);
+
+    console.log(
+      `[NotificationService] Doctor SMS reminder prepared for ${doctorPhone}`
+    );
+  }
+
+  // ----------------------------------------------------------
   // UPDATE APPOINTMENT IN SUPABASE
-  // ==========================================================
+  // ----------------------------------------------------------
 
   const reminderSentAt =
     new Date().toISOString();
@@ -879,9 +851,9 @@ export async function sendAppointmentReminder(
     }
   }
 
-  // ==========================================================
-  // PATIENT IN-APP NOTIFICATION
-  // ==========================================================
+  // ----------------------------------------------------------
+  // IN-APP NOTIFICATION FOR PATIENT
+  // ----------------------------------------------------------
 
   const patientProfileId =
     getPatientProfileId(apt);
@@ -889,21 +861,18 @@ export async function sendAppointmentReminder(
   if (patientProfileId) {
     await addNotification({
       user_id: patientProfileId,
-
       title: '24-Hour Appointment Reminder',
-
       message:
-        `Your appointment with ${doctorName || 'your doctor'} ` +
-        `is tomorrow (${apt.appointment_date}) ` +
+        `Your appointment with ${getDoctorName(apt)} ` +
+        `is scheduled for ${apt.appointment_date} ` +
         `at ${apt.appointment_time}.`,
-
       type: 'INFO'
     });
   }
 
-  // ==========================================================
-  // DOCTOR IN-APP NOTIFICATION
-  // ==========================================================
+  // ----------------------------------------------------------
+  // IN-APP NOTIFICATION FOR DOCTOR
+  // ----------------------------------------------------------
 
   const doctorProfileId =
     getDoctorProfileId(apt);
@@ -911,15 +880,11 @@ export async function sendAppointmentReminder(
   if (doctorProfileId) {
     await addNotification({
       user_id: doctorProfileId,
-
       title: '24-Hour Appointment Reminder',
-
       message:
-        `You have an appointment with ` +
-        `${patientName || 'a patient'} ` +
-        `tomorrow (${apt.appointment_date}) ` +
+        `You have an appointment with ${getPatientName(apt)} ` +
+        `on ${apt.appointment_date} ` +
         `at ${apt.appointment_time}.`,
-
       type: 'INFO'
     });
   }
@@ -929,19 +894,13 @@ export async function sendAppointmentReminder(
 
   return {
     success: true,
-
     sentCount: sentLogs.length,
-
-    patientNotifications: patientLogs.length,
-
-    doctorNotifications: doctorLogs.length,
-
     logs: sentLogs
   };
 }
 
 // ============================================================
-// AUTOMATED 24-HOUR REMINDERS
+// CHECK AND SEND 24-HOUR REMINDERS
 // ============================================================
 
 export async function checkAndSend24hReminders() {
@@ -958,28 +917,20 @@ export async function checkAndSend24hReminders() {
 
   const now = new Date();
 
-  const twentyFourHoursFromNow =
+  const targetTime =
     new Date(
       now.getTime() +
-      reminderSettings.leadHours *
-        60 *
-        60 *
-        1000
+      reminderSettings.leadHours * 60 * 60 * 1000
     );
 
-  const todayStr =
-    now.toISOString().split('T')[0];
-
-  const tomorrowStr =
-    twentyFourHoursFromNow
-      .toISOString()
-      .split('T')[0];
+  const targetDate =
+    targetTime.toISOString().split('T')[0];
 
   let appointmentsToCheck = [];
 
-  // ==========================================================
+  // ----------------------------------------------------------
   // SUPABASE
-  // ==========================================================
+  // ----------------------------------------------------------
 
   if (isSupabaseConfigured) {
     try {
@@ -987,20 +938,11 @@ export async function checkAndSend24hReminders() {
         .from('appointments')
         .select(`
           *,
-          patients(
-            *,
-            profiles(*)
-          ),
-          doctors(
-            *,
-            profiles(*)
-          ),
+          patients(*, profiles(*)),
+          doctors(*, profiles(*)),
           departments(*)
         `)
-        .in('appointment_date', [
-          todayStr,
-          tomorrowStr
-        ])
+        .eq('appointment_date', targetDate)
         .neq('status', 'CANCELLED')
         .or(
           'reminder_sent_24h.is.null,reminder_sent_24h.eq.false'
@@ -1016,35 +958,24 @@ export async function checkAndSend24hReminders() {
       }
     } catch (error) {
       console.error(
-        '[NotificationService] Reminder query failed:',
+        '[NotificationService] Reminder query error:',
         error.message
       );
     }
-  }
+  } else {
+    // --------------------------------------------------------
+    // MOCK DATA
+    // --------------------------------------------------------
 
-  // ==========================================================
-  // MOCK DATA
-  // ==========================================================
-
-  else {
     appointmentsToCheck =
-      (mockData.appointments || []).filter(
-        apt => {
-          return (
-            (
-              apt.appointment_date === todayStr ||
-              apt.appointment_date === tomorrowStr
-            ) &&
-            apt.status !== 'CANCELLED' &&
-            !apt.reminder_sent_24h
-          );
-        }
-      );
+      (mockData.appointments || []).filter(apt => {
+        return (
+          apt.appointment_date === targetDate &&
+          apt.status !== 'CANCELLED' &&
+          !apt.reminder_sent_24h
+        );
+      });
   }
-
-  // ==========================================================
-  // PROCESS APPOINTMENTS
-  // ==========================================================
 
   let totalSent = 0;
 
@@ -1063,22 +994,9 @@ export async function checkAndSend24hReminders() {
 
       results.push({
         appointment_id: appointment.id,
-
-        patientNotifications:
-          result.patientNotifications,
-
-        doctorNotifications:
-          result.doctorNotifications,
-
         result
       });
-
     } catch (error) {
-      console.error(
-        `[NotificationService] Reminder failed for appointment ${appointment.id}:`,
-        error.message
-      );
-
       results.push({
         appointment_id: appointment.id,
         error: error.message
@@ -1087,16 +1005,10 @@ export async function checkAndSend24hReminders() {
   }
 
   return {
-    targetDate: tomorrowStr,
-
-    checkedCount:
-      appointmentsToCheck.length,
-
+    targetDate,
+    checkedCount: appointmentsToCheck.length,
     sentCount: totalSent,
-
-    lastRunAt:
-      reminderSettings.lastRunAt,
-
+    lastRunAt: reminderSettings.lastRunAt,
     results
   };
 }
@@ -1121,42 +1033,28 @@ export function startAutomatedReminderScheduler() {
     intervalMinutes * 60 * 1000;
 
   console.log(
-    `[NotificationService] 24h Reminder Scheduler started. ` +
+    `[NotificationService] 24h reminder scheduler started. ` +
     `Interval: ${intervalMinutes} minutes`
   );
 
-  // Run once shortly after server startup
   setTimeout(() => {
     checkAndSend24hReminders()
-      .then(result => {
-        console.log(
-          '[NotificationService] Startup reminder scan:',
-          result
-        );
-      })
-      .catch(error => {
+      .catch(error =>
         console.error(
           '[NotificationService] Startup reminder error:',
           error.message
-        );
-      });
+        )
+      );
   }, 3000);
 
-  // Continue automatically
   timerId = setInterval(() => {
     checkAndSend24hReminders()
-      .then(result => {
-        console.log(
-          '[NotificationService] Scheduled reminder scan:',
-          result
-        );
-      })
-      .catch(error => {
+      .catch(error =>
         console.error(
           '[NotificationService] Scheduled reminder error:',
           error.message
-        );
-      });
+        )
+      );
   }, intervalMs);
 }
 
